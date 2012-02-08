@@ -8,6 +8,7 @@ This is part of the libb64 project, and has been placed in the public domain.
 For details, see http://sourceforge.net/projects/libb64
 */
 
+#include <stddef.h>
 #include <stdint.h>
 #include "base64encode.h"
 
@@ -22,7 +23,7 @@ char base64_encode_value(uint8_t value) {
     return encoding[value];
 }
 
-int base64_encode_update(base64_encodestate *S, const uint8_t *data, uint64_t datalen, char *encoded) {
+ptrdiff_t base64_encode_update(base64_encodestate *S, const uint8_t *data, uint64_t datalen, char *encoded) {
     char *encoded_begin = encoded;
     const uint8_t *currbyte = data;
     const uint8_t *data_end = data + datalen;
@@ -71,7 +72,7 @@ int base64_encode_update(base64_encodestate *S, const uint8_t *data, uint64_t da
     return encoded - encoded_begin;
 }
 
-int base64_encode_final(base64_encodestate *S, char *encoded) {
+ptrdiff_t base64_encode_final(base64_encodestate *S, char *encoded) {
     char *encoded_begin = encoded;
 
     switch (S->step) {
@@ -91,8 +92,8 @@ int base64_encode_final(base64_encodestate *S, char *encoded) {
     return encoded - encoded_begin;
 }
 
-int base64_encode(const uint8_t *data, uint64_t datalen, char *encoded) {
-    int c = 0;
+ptrdiff_t base64_encode(const uint8_t *data, uint64_t datalen, char *encoded) {
+    ptrdiff_t c = 0;
 
     base64_encodestate S;
     base64_encode_init(&S);
