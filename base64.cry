@@ -1,0 +1,140 @@
+/* base64 specification
+ * Author: David Lazar
+ *
+ * Based on RFC 4648:
+ * https://tools.ietf.org/html/rfc4648
+ */
+
+
+////////////////////////////////////////////////////////////////////////
+// base64 alphabet
+////////////////////////////////////////////////////////////////////////
+
+
+alphabet : [64][8];
+alphabet = ['A' .. 'Z'] # ['a' .. 'z'] # ['0' .. '9'] # ['+' '/'];
+
+alphabet' : [256][6];
+alphabet' = (zero : [43][6]) # [62 0 0 0 63] # [52 .. 61] # (zero : [7][6]) # [0 .. 26] # (zero : [5][6]) # [26 .. 51] # zero;
+
+inAlphabet : [8] -> Bit;
+inAlphabet x = ((x >= 'A') & (x <= 'Z'))
+             | ((x >= 'a') & (x <= 'z'))
+             | ((x >= '0') & (x <= '9'))
+             |  (x == '+') | (x == '/');
+
+theorem alphabetLeftInv : {x}. alphabet' @ (alphabet @ (x:[6])) == x;
+
+theorem alphabetRightInv : {x}.
+  if inAlphabet x
+    then alphabet @ (alphabet' @ x) == x
+    else True;
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Core base64 encode and decode functions. These do not handle padding.
+////////////////////////////////////////////////////////////////////////
+
+
+encode : {a c} (fin a, c == (8 * a + 5) / 6, 6 * c >= 8 * a) => [a][8] -> [c][8];
+encode xs = [| alphabet @ x || x <- groupBy(6, join xs # zero) |];
+
+encodeLE : {a c} (fin a, fin c, c == (8 * a + 5) / 6, 6 * c >= 8 * a) => [a][8] -> [c][8];
+encodeLE xs = [| alphabet @ reverse x || x <- groupBy(6, join rxs # zero) |]
+  where rxs = [| reverse x || x <- xs |];
+
+decode : {a c} (fin a, a == (6 * c - 5) / 8 + 1, 6 * c >= 8 * a) => [c][8] -> [a][8];
+decode xs = groupBy(8, take(`a * 8, join [| alphabet' @ x || x <- xs |]));
+
+decodeLE : {a c} (fin a, a == (6 * c - 5) / 8 + 1, 6 * c >= 8 * a) => [c][8] -> [a][8];
+decodeLE xs = [| reverse b || b <- groupBy(8, take(`a * 8, join [| reverse (alphabet' @  x) || x <- xs |])) |];
+
+// polymorphic theorems
+theorem encodeLeftInv: {x}. decode (encode x) == x;
+
+theorem encodeLELeftInv: {x}. decodeLE (encodeLE x) == x;
+
+// NOTE: encode is non-surjective, so it does not have a right inverse.
+// Similarly, decode is non-injective: 
+//     decode "//" -> [0xff]
+//     decode "/w" -> [0xff]
+
+
+////////////////////////////////////////////////////////////////////////
+// base64 encode and decode functions that handle padding
+////////////////////////////////////////////////////////////////////////
+
+// NOTE: we use the LE functions since Cryptol is little endian by default.
+
+b64encode : {a r}
+    ( fin a, fin r
+    , r == 4 * ((a + 2) / 3)
+    // inferred:
+    , r >= (8 * a + 5) / 6
+    , 6 * ((8 * a + 5) / 6) >= 8 * a
+    ) => [a][8] -> [r][8];
+b64encode xs = encodeLE xs # padding
+  where {
+    padding : {z} (fin z) => [z][8];
+    padding = take(`z, "=" # padding);
+  };
+
+
+// The length of the decoded message 'a' depends on the value of the
+// input string (in particular the number of '=' symbols padding the 
+// input). Cryptol's type system is not powerful enough to express
+// this dependence, so either 'pad' or 'a' must be passed explicitly:
+//
+// b64decode `{a=5}   "aGVsbG8=" --> "hello"
+// b64decode `{pad=1} "aGVsbG8=" --> "hello" 
+// 
+b64decode : {pad a r c}
+    ( fin a, fin r, fin pad
+    , a + pad == (6 * r - 5) / 8 + 1
+    , pad >= 0, 2 >= pad
+    // inferred:
+    , 6 * r >= 8 * ((6 * r - 5) / 8) + 8
+    ) => [r][8] -> [a][8];
+b64decode xs = reverse (drop(`pad, reverse (decodeLE xs)));
+
+
+// polymorphic theorem
+b64encodeLeftInv : {a}
+    ( fin a
+    // inferred:
+    , 2 >= (24*((a+2)/3)-5)/8-a+1
+    , 6*((8*a+5)/6) >= 8*a
+    , 4*((a+2)/3) >= (8*a+5)/6
+    , 24*((a+2)/3) >= 8*((24*((a+2)/3)-5)/8)+8
+    , (24*((a+2)/3)-5)/8-a+1 >= 0
+    ) => [a][8] -> Bit;
+theorem b64encodeLeftInv: {x}. b64decode (b64encode x) == x;
+
+
+
+////////////////////////////////////////////////////////////////////////
+// test cases
+////////////////////////////////////////////////////////////////////////
+
+
+tests = [te1 te2 te3 te4 te5 te6 te7 td1 td2 td3 td4 td5 td6 td7];
+
+theorem testsPass: tests == ~zero;
+
+// Test vectors from RFC 4648: https://tools.ietf.org/html/rfc4648#section-10
+te1 = b64encode "" == "";
+te2 = b64encode "f" == "Zg==";
+te3 = b64encode "fo" == "Zm8="; 
+te4 = b64encode "foo" == "Zm9v";
+te5 = b64encode "foob" == "Zm9vYg==";
+te6 = b64encode "fooba" == "Zm9vYmE=";
+te7 = b64encode "foobar" == "Zm9vYmFy";
+
+td1 = b64decode`{pad=0} "" == "";
+td2 = b64decode`{pad=2} "Zg==" == "f";
+td3 = b64decode`{pad=1} "Zm8=" == "fo";
+td4 = b64decode`{pad=0} "Zm9v" == "foo";
+td5 = b64decode`{pad=2} "Zm9vYg==" == "foob";
+td6 = b64decode`{pad=1} "Zm9vYmE=" == "fooba";
+td7 = b64decode`{pad=0} "Zm9vYmFy" == "foobar";
