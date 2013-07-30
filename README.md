@@ -2,6 +2,7 @@ This project provides the following:
 
 * `*.c` — a fast base64 encoding routine based on [libb64](http://libb64.sourceforge.net/).
 * `base64.cry` — a Cryptol specification of base64.
+* `proof/` — a proof that the C code is correct with respect to the Cryptol spec.
 
 # Usage
 

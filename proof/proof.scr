@@ -1,0 +1,4 @@
+:set symbolic
+:print "\nProving function equivalent to reference:"
+:type encode_aig
+:prove MatchesRef

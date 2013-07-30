@@ -1,0 +1,9 @@
+include "../base64.cry";
+
+#define STR(x) #x
+#define XSTR(x) STR(x)
+#define OUTLEN 4 * ((INLEN + 2) / 3)
+
+extern AIG encode_aig(XSTR(AIGFILE)) : [INLEN][8] -> [OUTLEN][8];
+
+theorem MatchesRef : {x}. encode_aig x == b64encode x;
