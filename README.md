@@ -1,24 +1,23 @@
-*base64* is a fork of [libb64](http://libb64.sourceforge.net/) with the following notable differences:
+This project provides the following:
 
-* The *base64* API more closely resembles the API of a hash function (`init`, `update`, `final`).
-* Currently, *base64* only provides an encoding routine.
-* The output of the *base64* encoding routine does not include newlines.
-* Variables have been renamed for clarity.
+* `*.c` — a fast base64 encoding routine based on [libb64](http://libb64.sourceforge.net/).
+* `base64.cry` — a Cryptol specification of base64.
 
 # Usage
 
-To build the code:
+To build the C code:
 
     $ make
 
-Note, using `CC=clang` produces faster code on my machine. To test the code:
+To run the C code:
 
     $ echo -n 'foobar' | ./b64enc -
     Zm9vYmFy
 
 # License
 
-Public domain. Do whatever you want with the code. The code comes without any warranty.
+C code: public domain, without any warranty.
+Everything else: MIT license.
 
 # Contributing
 
