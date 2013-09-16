@@ -4,6 +4,10 @@ This project provides the following:
 * `base64.cry` — a Cryptol specification of base64.
 * `proof/` — a proof that the C code is correct with respect to the Cryptol spec.
 
+You can read about the proof here:
+
+http://corp.galois.com/blog/2013/9/11/high-assurance-base64.html
+
 # Usage
 
 To build the C code:
