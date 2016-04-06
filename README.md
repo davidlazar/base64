@@ -6,7 +6,7 @@ This project provides the following:
 
 You can read about the proof here:
 
-http://corp.galois.com/blog/2013/9/11/high-assurance-base64.html
+https://galois.com/blog/2013/09/high-assurance-base64/
 
 # Usage
 
