@@ -23,7 +23,3 @@ To run the C code:
 
 C code: public domain, without any warranty.
 Everything else: MIT license.
-
-# Contributing
-
-Please report bugs and feature requests using the [GitHub issue tracker](https://github.com/davidlazar/base64/issues).
